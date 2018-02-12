@@ -2,7 +2,7 @@ pycoin -- Python Cryptocoin Utilities
 =====================================
 
 This is an implementation of a bunch of utility routines that may be useful when dealing with bitcoin and some
-alt-coins. It has been tested with Python 2.7, 3.3, 3.4 and 3.5.
+alt-coins (Groestlcoin). It has been tested with Python 2.7, 3.3, 3.4 and 3.5.
 
 See also [pycoinnet](http://github.com/richardkiss/pycoinnet/) for a library that speaks the bitcoin protocol.
 
@@ -16,7 +16,7 @@ Keys & BIP32
 ------------
 
 The class pycoin.key.Key contains a convenience Key class that will parse the base58 representation of a BIP 32
-wallet [BIP0032] or a WIF or a bitcoin (or altcoin) address, and convert downwards.
+wallet [BIP0032] or a WIF or a bitcoin (or groestlcoin) address, and convert downwards.
 
 WARNING: be extremely careful giving out public wallet keys. If someone has access to a private wallet key P, of
 course they have access to all descendent wallet keys of P. But if they also have access to a public wallet key K
@@ -41,7 +41,7 @@ Specify one of "hierarchical_wallet, secret_exponent, public_pair or hash160" to
 
 Or
 
-`Key.from_text(b58_text)` accepts an address (bitcoin or other), a WIF, or a BIP32 wallet string and yield a Key.
+`Key.from_text(b58_text)` accepts an address (bitcoin or groestlcoin), a WIF, or a BIP32 wallet string and yield a Key.
 
 `Key.from_sec(sec)` creates a Key from the SEC bytestream encoding of a public pair.
 
@@ -56,7 +56,7 @@ See [BIP32.txt](./BIP32.txt) for more information.
 Transactions
 ------------
 
-pycoin.tx.Tx is a class that wraps a bitcoin transaction. You can create, edit, sign, or validate a transaction using
+pycoin.tx.Tx is a class that wraps a groestlcoin transaction. You can create, edit, sign, or validate a transaction using
 methods in this class.
 
 You can also use `pycoin.tx.tx_utils` which has `create_tx` and `create_signed_tx`, which gives you a
