@@ -1,7 +1,7 @@
 
 import binascii
 from .. import encoding
-from ..intbytes import int2byte
+from ..intbytes import byte2int, int2byte
 from ..networks.registry import network_codes, network_prefixes, bech32_prefixes
 from ..serialize import h2b
 from ..contrib.segwit_addr import bech32_decode, convertbits
@@ -26,7 +26,7 @@ def netcode_and_type_lookup_for_data(data):
     return d
 
 
-def netcode_and_type_for_data(data, netcodes=None):
+def netcode_and_type_for_data(data, netcode='GRS'):
     """
     Given some already-decoded raw data from a base58 string,
     return (N, T, L) where N is the network code ("BTC" or "LTC") and
@@ -35,13 +35,14 @@ def netcode_and_type_for_data(data, netcodes=None):
     May also raise EncodingError if no prefix found.
     """
     d = netcode_and_type_lookup_for_data(data)
-    if netcodes is None:
-        netcodes = network_codes()
-    for netcode in netcodes:
-        v = d.get(netcode)
-        if v:
-            return netcode, v[0], v[1]
+    # if netcodes is None:
+    #     netcodes = network_codes()
+# for netcode in netcodes:
+    netcode = 'GRS'
+    v = d.get(netcode)
 
+    if v:
+        return netcode, v[0], v[1]
     raise encoding.EncodingError("unknown prefix")
 
 
@@ -75,16 +76,19 @@ def netcode_and_type_for_text(text, netcodes=None):
     except (TypeError, KeyError):
         pass
 
-    data = encoding.a2b_hashed_base58(text)
-    netcode, the_type, length = netcode_and_type_for_data(data, netcodes=netcodes)
+    data = encoding.a2b_hashed_base58_grs(text)
+    netcode, the_type, length = netcode_and_type_for_data(data)
     return netcode, the_type, data[length:]
 
 
 def _check_against(text, expected_type, allowable_netcodes):
-    if allowable_netcodes is None:
-        allowable_netcodes = network_codes()
+    # if allowable_netcodes is None:
+    #
+    #     _netcodes = network_codes()
+    print(text)
     try:
-        netcode, the_type, data = netcode_and_type_for_text(text, netcodes=allowable_netcodes)
+        data = encoding.a2b_hashed_base58_grs(text)
+        netcode, the_type, data = netcode_and_type_for_text(data, netcodes=allowable_netcodes)
         if the_type in expected_type and netcode in allowable_netcodes:
             return netcode
     except encoding.EncodingError:
@@ -92,13 +96,15 @@ def _check_against(text, expected_type, allowable_netcodes):
     return None
 
 
-def is_address_valid(address, allowable_types=DEFAULT_ADDRESS_TYPES, allowable_netcodes=None):
+def is_address_valid(address, allowable_types='pub32', allowable_netcodes='GRS'):
     """
     Accept an address, and a list of allowable address types (a subset of "address" and "pay_to_script"),
     and allowable networks (defaulting to just Bitcoin mainnet), return the network that the address is
     a part of, or None if it doesn't validate.
     """
     return _check_against(address, allowable_types, allowable_netcodes)
+
+
 
 
 def is_wif_valid(wif, allowable_netcodes=None):

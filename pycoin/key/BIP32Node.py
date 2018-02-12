@@ -44,7 +44,7 @@ import hmac
 import itertools
 import struct
 
-from ..encoding import a2b_hashed_base58, b2a_hashed_base58, from_bytes_32, to_bytes_32
+from ..encoding import EncodingError, a2b_hashed_base58, a2b_hashed_base58_grs, b2a_hashed_base58, b2a_hashed_base58_grs, from_bytes_32, to_bytes_32
 from ..encoding import sec_to_public_pair, public_pair_to_hash160_sec, EncodingError
 from ..networks import prv32_prefix_for_netcode, pub32_prefix_for_netcode
 from .validate import netcode_and_type_for_data
@@ -72,8 +72,15 @@ class BIP32Node(Key):
         """Generate a Wallet from a base58 string in a standard way."""
         # TODO: support subkey suffixes
 
-        data = a2b_hashed_base58(b58_str)
+        grs_encoded = False
+        try:
+            data = a2b_hashed_base58(b58_str)
+        except EncodingError:
+            data = a2b_hashed_base58_grs(b58_str)
+            grs_encoded = False
         netcode, key_type, length = netcode_and_type_for_data(data)
+        if grs_encoded:
+            netcode = 'GRS'
 
         if key_type not in ("pub32", "prv32"):
             raise EncodingError("bad wallet key header")
@@ -160,6 +167,8 @@ class BIP32Node(Key):
 
     def hwif(self, as_private=False):
         """Yield a 111-byte string corresponding to this node."""
+        if self.is_grs():
+            return b2a_hashed_base58_grs(self.serialize(as_private=as_private))
         return b2a_hashed_base58(self.serialize(as_private=as_private))
 
     as_text = hwif

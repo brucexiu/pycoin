@@ -46,7 +46,7 @@ def get_message_hash(args):
     message = args.message
     if message is None:
         message = args.input.read()
-    return hash_for_signing(message, args.network)
+    return hash_for_signing(message)
 
 
 def msg_sign(args, parser):

@@ -1,5 +1,5 @@
-from pycoin.ecdsa.secp256k1 import secp256k1_generator
-from pycoin.encoding import EncodingError, a2b_hashed_base58, \
+from pycoin import ecdsa
+from pycoin.encoding import EncodingError, a2b_hashed_base58, a2b_hashed_base58_grs, \
     from_bytes_32, hash160, hash160_sec_to_bitcoin_address, \
     is_sec_compressed, public_pair_to_sec, public_pair_to_hash160_sec, \
     sec_to_public_pair, secret_exponent_to_wif
@@ -66,14 +66,15 @@ class Key(object):
 
         if self._public_pair is None and self._secret_exponent is not None:
             if self._secret_exponent < 1 \
-                    or self._secret_exponent >= secp256k1_generator.order():
+                    or self._secret_exponent >= ecdsa.generator_secp256k1.order():
                 raise InvalidSecretExponentError()
-            public_pair = self._secret_exponent * secp256k1_generator
+            public_pair = ecdsa.public_pair_for_secret_exponent(
+                ecdsa.generator_secp256k1, self._secret_exponent)
             self._public_pair = public_pair
 
         if self._public_pair is not None \
                 and (None in self._public_pair or
-                     not secp256k1_generator.contains_point(*self._public_pair)):
+                     not ecdsa.is_public_pair_valid(ecdsa.generator_secp256k1, self._public_pair)):
             raise InvalidPublicPairError()
 
     @classmethod
@@ -84,8 +85,15 @@ class Key(object):
         The "is_compressed" parameter is ignored unless a public address is passed in.
         """
 
-        data = a2b_hashed_base58(text)
+        grs_encoded = False
+        try:
+            data = a2b_hashed_base58(text)
+        except EncodingError:
+            data = a2b_hashed_base58_grs(text)
+            grs_encoded = True
         netcode, key_type, length = netcode_and_type_for_data(data)
+        if grs_encoded:
+            netcode = 'GRS'
         data = data[1:]
 
         if key_type in ("pub32", "prv32"):
@@ -132,7 +140,8 @@ class Key(object):
             return None
         return secret_exponent_to_wif(secret_exponent,
                                       compressed=not self._use_uncompressed(use_uncompressed),
-                                      wif_prefix=wif_prefix)
+                                      wif_prefix=wif_prefix,
+                                      grs=self.is_grs())
 
     def public_pair(self):
         """
@@ -145,6 +154,10 @@ class Key(object):
         Return the netcode
         """
         return self._netcode
+
+
+    def is_grs(self):
+        return self._netcode == 'GRS'
 
     def sec(self, use_uncompressed=None):
         """
@@ -194,10 +207,11 @@ class Key(object):
         address_prefix = address_prefix_for_netcode(self._netcode)
         hash160 = self.hash160(use_uncompressed=use_uncompressed)
         if hash160:
-            return hash160_sec_to_bitcoin_address(hash160, address_prefix=address_prefix)
+            return hash160_sec_to_bitcoin_address(hash160, address_prefix=address_prefix, grs=self.is_grs())
         return None
 
     bitcoin_address = address
+    print(bitcoin_address)
 
     def as_text(self):
         """
@@ -238,7 +252,8 @@ class Key(object):
         if not self.is_private():
             raise RuntimeError("Key must be private to be able to sign")
         val = from_bytes_32(h)
-        r, s = secp256k1_generator.sign(self.secret_exponent(), val)
+        r, s = ecdsa.sign(ecdsa.generator_secp256k1, self.secret_exponent(),
+                          val)
         return sigencode_der(r, s)
 
     def verify(self, h, sig):
@@ -251,7 +266,8 @@ class Key(object):
         if self.public_pair() is None:
             # find the pubkey from the signature and see if it matches
             # our key
-            possible_pubkeys = secp256k1_generator.possible_public_pairs_for_signature(val, rs)
+            possible_pubkeys = ecdsa.possible_public_pairs_for_signature(
+                ecdsa.generator_secp256k1, val, rs)
             hash160 = self.hash160()
             for candidate in possible_pubkeys:
                 if hash160 == public_pair_to_hash160_sec(candidate, True):
@@ -263,7 +279,7 @@ class Key(object):
             else:
                 # signature is using a pubkey that's not this key
                 return False
-        return secp256k1_generator.verify(pubkey, val, rs)
+        return ecdsa.verify(ecdsa.generator_secp256k1, pubkey, val, rs)
 
     def _use_uncompressed(self, use_uncompressed=None):
         if use_uncompressed:
