@@ -29,7 +29,7 @@ import io
 import warnings
 
 from ..convention import SATOSHI_PER_COIN
-from ..encoding import double_sha256, from_bytes_32
+from ..encoding import double_sha256, from_bytes_32, single_sha256
 from ..serialize import b2h, b2h_rev, h2b, h2b_rev
 from ..serialize.bitcoin_streamer import (
     parse_struct, parse_bc_int, parse_bc_string,
@@ -206,10 +206,10 @@ class Tx(object):
         self.stream(s, include_witness_data=False)
         if hash_type is not None:
             stream_struct("L", s, hash_type)
-        return double_sha256(s.getvalue())
+        return single_sha256(s.getvalue())
 
     def w_hash(self):
-        return double_sha256(self.as_bin())
+        return single_sha256(self.as_bin())
 
     def w_id(self):
         return b2h_rev(self.w_hash())
@@ -223,7 +223,7 @@ class Tx(object):
         """
         s = io.BytesIO()
         self.stream(s, blank_solutions=True)
-        return double_sha256(s.getvalue())
+        return single_sha256(s.getvalue())
 
     def id(self):
         """Return the human-readable hash for this Tx object."""
@@ -304,7 +304,7 @@ class Tx(object):
         for tx_in in self.txs_in:
             f.write(tx_in.previous_hash)
             stream_struct("L", f, tx_in.previous_index)
-        return double_sha256(f.getvalue())
+        return single_sha256(f.getvalue())
 
     def hash_sequence(self, hash_type):
         if (
@@ -317,7 +317,7 @@ class Tx(object):
         f = io.BytesIO()
         for tx_in in self.txs_in:
             stream_struct("L", f, tx_in.sequence)
-        return double_sha256(f.getvalue())
+        return single_sha256(f.getvalue())
 
     def hash_outputs(self, hash_type, tx_in_idx):
         txs_out = self.txs_out
@@ -331,7 +331,7 @@ class Tx(object):
         for tx_out in txs_out:
             stream_struct("Q", f, tx_out.coin_value)
             tools.write_push_data([tx_out.script], f)
-        return double_sha256(f.getvalue())
+        return single_sha256(f.getvalue())
 
     def segwit_signature_preimage(self, script, tx_in_idx, hash_type):
         f = io.BytesIO()
@@ -352,7 +352,7 @@ class Tx(object):
         return f.getvalue()
 
     def signature_for_hash_type_segwit(self, script, tx_in_idx, hash_type):
-        return from_bytes_32(double_sha256(self.segwit_signature_preimage(script, tx_in_idx, hash_type)))
+        return from_bytes_32(single_sha256(self.segwit_signature_preimage(script, tx_in_idx, hash_type)))
 
     def solve(self, hash160_lookup, tx_in_idx, tx_out_script, hash_type=None, **kwargs):
         """

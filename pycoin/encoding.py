@@ -129,6 +129,11 @@ def double_sha256(data):
     return bytes_as_revhex(hashlib.sha256(hashlib.sha256(data).digest()).digest())
 
 
+def single_sha256(data):
+    """hash for grs txid"""
+    return bytes_as_revhex(hashlib.sha256(data).digest())
+
+
 def hash160(data):
     """A standard compound hash."""
     return ripemd160(hashlib.sha256(data).digest()).digest()

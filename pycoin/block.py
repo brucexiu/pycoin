@@ -1,7 +1,7 @@
 
 import io
 
-from .encoding import double_sha256
+from .encoding import groestlHash, single_sha256
 from .merkle import merkle
 from .serialize.bitcoin_streamer import parse_struct, stream_struct
 from .serialize import b2h, b2h_rev
@@ -67,7 +67,7 @@ class Block(object):
     def _calculate_hash(self):
         s = io.BytesIO()
         self.stream_header(s)
-        return double_sha256(s.getvalue())
+        return groestlHash(s.getvalue())
 
     def hash(self):
         """Calculate the hash for the block header. Note that this has the bytes
@@ -141,7 +141,7 @@ class Block(object):
     def check_merkle_hash(self):
         """Raise a BadMerkleRootError if the Merkle hash of the
         transactions does not match the Merkle hash included in the block."""
-        calculated_hash = merkle([tx.hash() for tx in self.txs], double_sha256)
+        calculated_hash = merkle([tx.hash() for tx in self.txs], single_sha256)
         if calculated_hash != self.merkle_root:
             raise BadMerkleRootError(
                 "calculated %s but block contains %s" % (b2h(calculated_hash), b2h(self.merkle_root)))
