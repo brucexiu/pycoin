@@ -57,8 +57,10 @@ except Exception:
     # to the "libraries" section of your app.yaml
     from Crypto.Hash.RIPEMD import RIPEMD160Hash as ripemd160
 
+
 def groestlHash(data):
     return groestlcoin_hash.getHash(data, len(data))
+
 
 def to_long(base, lookup_f, s):
     """
@@ -162,8 +164,10 @@ def b2a_hashed_base58(data):
     """
     return b2a_base58(data + double_sha256(data)[:4])
 
+
 def b2a_hashed_base58_grs(data):
     return b2a_base58(data + groestlHash(data)[:4])
+
 
 def a2b_hashed_base58(s):
     """
@@ -176,12 +180,14 @@ def a2b_hashed_base58(s):
         return data
     raise EncodingError("hashed base58 has bad checksum %s" % s)
 
+
 def a2b_hashed_base58_grs(s):
     data = a2b_base58(s)
     data, the_hash = data[:-4], data[-4:]
     if groestlHash(data)[:4] == the_hash:
         return data
     raise EncodingError("hashed base58 has bad checksum %s" % s)
+
 
 def is_hashed_base58_valid(base58):
     """Return True if and only if base58 is valid hashed_base58."""
@@ -229,7 +235,7 @@ def is_valid_wif(wif, allowable_wif_prefixes=[b'\x80']):
     return True
 
 
-def secret_exponent_to_wif(secret_exp, compressed=True, wif_prefix=b'\x80', grs=False):
+def secret_exponent_to_wif(secret_exp, compressed=True, wif_prefix=b'\x80', grs=True):
     """Convert a secret exponent (correspdong to a private key) to WIF format."""
     d = wif_prefix + to_bytes_32(secret_exp)
     if compressed:
@@ -279,7 +285,7 @@ def public_pair_to_hash160_sec(public_pair, compressed=True):
     return hash160(public_pair_to_sec(public_pair, compressed=compressed))
 
 
-def hash160_sec_to_bitcoin_address(hash160_sec, address_prefix=b'\0', grs=False):
+def hash160_sec_to_bitcoin_address(hash160_sec, address_prefix=b'\0', grs=True):
     """Convert the hash160 of a sec version of a public_pair to a Bitcoin address."""
     if grs:
         return b2a_hashed_base58_grs(address_prefix + hash160_sec)
