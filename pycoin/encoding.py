@@ -166,6 +166,7 @@ def b2a_hashed_base58(data):
 
 
 def b2a_hashed_base58_grs(data):
+    print('grs address')
     return b2a_base58(data + groestlHash(data)[:4])
 
 
@@ -287,6 +288,7 @@ def public_pair_to_hash160_sec(public_pair, compressed=True):
 
 def hash160_sec_to_bitcoin_address(hash160_sec, address_prefix=b'\0', grs=True):
     """Convert the hash160 of a sec version of a public_pair to a Bitcoin address."""
+    print(grs)
     if grs:
         return b2a_hashed_base58_grs(address_prefix + hash160_sec)
     return b2a_hashed_base58(address_prefix + hash160_sec)
